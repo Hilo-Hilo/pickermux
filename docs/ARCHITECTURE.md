@@ -56,12 +56,14 @@ The service is installed as a user LaunchAgent. Its runtime copy lives outside
 the source checkout so macOS privacy protection on folders such as Documents
 does not break login-time startup.
 
-Configured external providers have three supported kinds. `lmstudio-responses`
+Configured external providers have four supported kinds. `lmstudio-responses`
 adds LM Studio-specific metadata discovery and request adapters.
 `openai-responses` supports explicitly configured local or remote Responses
 providers with a model allowlist verified through `/models`. Both route model
 requests through the Responses API and require exact model-bound certification
-before tool access. `mlx-chat-completions` is a separate experimental
+before tool access. The explicit `omlx-responses` kind uses the same allowlist
+discovery on loopback. It translates client tool search through the shared
+function codec after an additional per-model certification. `mlx-chat-completions` is a separate experimental
 adapter for immutable local HF model profiles and reviewed Kolibri tools. General Chat Completions
 compatibility does not establish either contract. Automatic loaded-model discovery and the local context-compaction adapter
 remain LM Studio-specific; reviewed MLX tools can also certify Efficient Fidelity. The companion's

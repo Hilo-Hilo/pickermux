@@ -18,11 +18,12 @@ routing and credentials.
 | --- | --- | --- |
 | `lmstudio-responses` | Loaded LLMs with measured metadata, or an explicit allowlist. | Responses routing, model-bound tools, and LM Studio-specific adapters. |
 | `openai-responses` | Explicit allowlist verified against the provider's `/models` response. | Responses routing and model-bound tools for compatible local or remote providers. |
+| `omlx-responses` | Explicit oMLX allowlist on IPv4 loopback. | Per-model Direct and client tool-search certification through Responses. |
 | `mlx-chat-completions` | Explicit immutable profiles on Apple-silicon loopback. | Experimental text and reviewed model-bound function tools; no reasoning, media, or compaction. |
 
 Responses providers must implement the required Responses contract, including applicable
 streaming and tool roundtrips. Supporting `/v1/chat/completions` alone is not
-sufficient. Loaded-model discovery, Efficient Fidelity, and the local
+sufficient. Loaded-model discovery and the local
 context-compaction adapter are specific to LM Studio.
 
 The companion's first-install default is LM Studio at
@@ -247,7 +248,7 @@ probe contracts and fingerprints are unchanged. Editing this source checkout
 does not update the installed backend; use the normal reviewed backend upgrade
 before retesting.
 
-For LM Studio, an additional tool-search probe can grant Efficient Fidelity.
+For LM Studio, oMLX, and reviewed managed MLX models, an additional tool-search probe can grant Efficient Fidelity.
 If that additive evidence fails or becomes stale while the base receipt remains
 valid, the model retains Direct fidelity. Missing or stale base evidence means
 text-only operation or quarantine pending recovery. No provider-wide switch
@@ -286,7 +287,7 @@ Receipts store outcomes and fingerprints, never prompts, responses, or credentia
 
 ### Efficient Fidelity and text-only performance
 
-An Efficient Fidelity-certified LM Studio model keeps Codex's complete agent
+An Efficient Fidelity-certified model keeps Codex's complete agent
 instructions and conversation. Codex searches its deferred tool inventory and
 supplies selected public schemas for the next inference. Non-deferred functions
 remain available. PickerMux translates the roundtrip; it does not choose or

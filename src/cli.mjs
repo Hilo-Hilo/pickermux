@@ -1,3 +1,4 @@
+import { supportsClientToolSearch } from "./tool-protocol.mjs";
 import { supportsMlxTools } from "./mlx-capabilities.mjs";
 import { MLX_COMMANDS, runMlxCli } from "./mlx-cli.mjs";
 
@@ -192,7 +193,8 @@ function usage() {
 
 Use local or remote models through LM Studio or an explicitly configured
 compatible Responses provider. LM Studio adds loaded-model discovery;
-other providers require a model allowlist. The local mlx-chat-completions provider
+other providers require a model allowlist. Use omlx-responses for certified
+client tool search with a local oMLX server. The local mlx-chat-completions provider
 loads pinned HF snapshots without LM Studio; reviewed Kolibri tools require certification.
 Keep the configured MLX server running during bridge startup and certification.
 Other Chat Completions servers are not supported by this adapter.
@@ -1618,12 +1620,13 @@ export async function runCertificationTransaction({
     for (const entry of rebound) {
       const { candidate, subject } = entry;
       currentModelId = candidate.id;
+      const supportsEfficientFidelity =
+        !directOnly && supportsClientToolSearch(subject.providerKind, subject.capabilities);
       emitCertificationProgress(onProgress, {
         phase: "model",
         index: completed.length + 1,
         total: rebound.length,
-        probeCount: !directOnly && (subject.providerKind === "lmstudio-responses" ||
-          (subject.providerKind === "mlx-chat-completions" && supportsMlxTools(subject.capabilities))) ? 9 : 7,
+        probeCount: supportsEfficientFidelity ? 9 : 7,
       });
       assertMatchingCertificationSubjects(
         [entry],
@@ -1662,9 +1665,6 @@ export async function runCertificationTransaction({
         gates,
       );
 
-      const supportsEfficientFidelity =
-        !directOnly && (subject.providerKind === "lmstudio-responses" ||
-          (subject.providerKind === "mlx-chat-completions" && supportsMlxTools(subject.capabilities)));
       let efficientFidelity = supportsEfficientFidelity
         ? "direct-fallback"
         : "not-applicable";

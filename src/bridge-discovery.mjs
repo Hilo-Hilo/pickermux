@@ -206,7 +206,7 @@ async function discoverGenericProvider({
         contextWindow: model.contextWindow,
         source: mlx ? "mlx-chat-completions" : "openai-compatible-models",
         capabilities: mlx ? normalizeMlxCapabilities(payload.data[0].capabilities) : {},
-        ...(mlx ? { providerKind: provider.kind } : {}),
+        ...(mlx || provider.kind === "omlx-responses" ? { providerKind: provider.kind } : {}),
         ...configuredReasoning(model),
       };
     });

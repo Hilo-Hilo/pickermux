@@ -113,6 +113,7 @@ function requestStreamUntilClose({ port, body, onData }) {
 }
 
 async function createHarness(t, {
+  providerKind = "lmstudio-responses",
   clientToolSearchEnabled = true,
   credentialResolver,
   respond,
@@ -142,7 +143,7 @@ async function createHarness(t, {
         assert.equal(model, PUBLIC_MODEL);
         return {
           kind: "external",
-          providerKind: "lmstudio-responses",
+          providerKind,
           providerId: "lmstudio",
           baseUrl: `http://127.0.0.1:${upstreamPort}/v1`,
           allowPrivateNetwork: true,
@@ -326,6 +327,33 @@ test("Efficient Fidelity hides deferred schemas while preserving the complete Co
       },
     ],
   });
+});
+
+test("oMLX projects only active tools and normalizes its nullable JSON output fields", async (t) => {
+  let extraFields = {};
+  const harness = await createHarness(t, {
+    providerKind: "omlx-responses",
+    respond({ body, response }) {
+      assert.equal(body.tools.length, 1);
+      assert.doesNotMatch(JSON.stringify(body), /read_file|write_file|defer_loading/u);
+      assert.deepEqual(body.input, fullHarnessInput());
+      jsonResponse(response, {
+        output: [{
+          type: "function_call", name: body.tools[0].name, id: "item-1",
+          call_id: "call-1", arguments: '{"query":"workspace"}', status: "completed",
+          role: null, content: null, summary: null, ...extraFields,
+        }],
+      });
+    },
+  });
+  const send = () => requestProxy({ port: harness.port, body: efficientRequest() });
+  const valid = await send();
+  assert.equal(valid.statusCode, 200);
+  assert.equal(JSON.parse(valid.body).output[0].type, "tool_search_call");
+  for (const invalid of [{ role: "assistant" }, { unknown: null }, { name: "unadvertised" }]) {
+    extraFields = invalid;
+    assert.equal((await send()).statusCode, 502);
+  }
 });
 
 test("Efficient Fidelity accepts Codex-sized search source descriptions", async (t) => {

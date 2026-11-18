@@ -14,6 +14,11 @@ The 0.23.x and 0.24.x entries are local milestones included in the public
 
 ## [Unreleased]
 
+### Added
+
+- Add an explicit local oMLX Responses provider with per-model certification
+  for Direct tools and on-demand tool search.
+
 ## [0.40.3] - 2026-10-27
 
 ### Changed

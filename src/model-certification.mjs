@@ -1,3 +1,4 @@
+import { supportsClientToolSearch } from "./tool-protocol.mjs";
 import { supportsMlxTools } from "./mlx-capabilities.mjs";
 
 import { createHash, randomBytes } from "node:crypto";
@@ -432,8 +433,7 @@ export function evaluateEfficientFidelityCertification(store, input) {
   return {
     ...direct,
     status:
-      (subject.providerKind === "lmstudio-responses" ||
-        (subject.providerKind === "mlx-chat-completions" && supportsMlxTools(subject.capabilities))) &&
+      supportsClientToolSearch(subject.providerKind, subject.capabilities) &&
       direct.receipt.gates[EFFICIENT_FIDELITY_CERTIFICATION_GATE] === true
         ? "valid"
         : "missing",
@@ -654,8 +654,7 @@ export async function recordPassedEfficientFidelityCertification(
 ) {
   const subject = createCertificationSubject(input);
   const normalizedGates = normalizeEfficientFidelityGates(gates);
-  if (subject.providerKind !== "lmstudio-responses" &&
-    !(subject.providerKind === "mlx-chat-completions" && supportsMlxTools(subject.capabilities))) {
+  if (!supportsClientToolSearch(subject.providerKind, subject.capabilities)) {
     throw new Error("Efficient Fidelity requires a reviewed provider tool protocol");
   }
   const store = await readCertificationStore(storePath);

@@ -58,7 +58,16 @@ server described below.
 | --- | --- | --- |
 | `lmstudio-responses` | Automatic loaded-model metadata or an explicit allowlist. | Loaded LM Studio instances supply metadata; configured entries may provide overrides. |
 | `openai-responses` | Explicit allowlist verified against `<baseUrl>/models`. | Each model must specify `type: "llm"` and a positive `contextWindow`. |
+| `omlx-responses` | Explicit oMLX allowlist verified against `/v1/models` on IPv4 loopback. | Specify `type: "llm"` and the context window configured in oMLX for each model. |
 | `mlx-chat-completions` | One explicit managed alias verified against `/models`. | `type: "llm"`, matching enforced `contextWindow`, reasoning `none`, and managed `mlxProfileDigest` (legacy Kolibri alias excepted). |
+
+For oMLX, set `baseUrl` to `http://127.0.0.1:<port>/v1` and
+`allowPrivateNetwork` to `true`. To migrate an existing oMLX allowlist,
+change its kind to `omlx-responses`, keep its public slugs, and run
+`pickermux setup --config <path>` with Codex Desktop closed and oMLX running.
+The new kind requires fresh Direct and Efficient Fidelity certification. A
+model that passes Direct alone keeps Direct tools. Client tool search does
+not add local context compaction.
 
 A generic provider's model list must have the OpenAI-compatible
 `{"data": [{"id": "example-model"}]}` shape, and inference must implement
@@ -441,7 +450,7 @@ or certification fingerprint; existing matching tool receipts remain valid.
 | Field | Purpose |
 | --- | --- |
 | `id` | Lowercase provider namespace used as the external slug prefix; 1-127 characters using lowercase letters, digits, `_`, or `-`, with an alphanumeric first and last character. |
-| `kind` | `lmstudio-responses` or `openai-responses`. |
+| `kind` | See the supported provider kinds above. |
 | `baseUrl` | Absolute provider URL without credentials, query, or fragment. |
 | `allowPrivateNetwork` | Required explicit decision for loopback, LAN, or Tailscale targets. |
 | `credentialKeychain` | Resolve this provider's bearer token from the macOS Keychain. |
@@ -628,7 +637,8 @@ quit the companion and move its app bundle to the Trash in Finder.
 
 Version 0.6.0 does not add an `agent`, `toolDelivery`, or similar provider-wide
 configuration field. Efficient Fidelity is an additive, model-bound capability
-for `lmstudio-responses` routes. It becomes available only after the exact model
+for LM Studio, local oMLX, and reviewed managed MLX routes. It becomes
+available only after the exact model
 configuration first passes Direct tool certification and then passes the live
 client-executed tool-search probe.
 

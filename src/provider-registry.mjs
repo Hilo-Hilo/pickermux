@@ -1,3 +1,4 @@
+import { supportsClientToolSearch } from "./tool-protocol.mjs";
 import { normalizeMlxCapabilities, supportsMlxTools } from "./mlx-capabilities.mjs";
 
 import { validateBridgeConfig } from "./bridge-config.mjs";
@@ -229,7 +230,7 @@ function mixedExternalRoutes(config, assignments, discoveredModels) {
         (!mlx || mlxTools) && catalogModel.tool_mode === "direct" &&
         catalogModel.shell_type === "unified_exec",
       clientToolSearchEnabled:
-        (provider.kind === "lmstudio-responses" || mlxTools) &&
+        supportsClientToolSearch(provider.kind, mlxCapabilities) &&
         catalogModel.tool_mode === "direct" &&
         catalogModel.shell_type === "unified_exec" &&
         catalogModel.supports_search_tool === true &&

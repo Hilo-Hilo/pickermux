@@ -76,10 +76,6 @@ function transformParsedResponse(parsed, codec, {
   }
 }
 
-function transformJsonText(text, codec) {
-  return JSON.stringify(transformParsedResponse(parseJsonText(text), codec));
-}
-
 function decodeUtf8(bytes, label) {
   try {
     return new TextDecoder("utf-8", { fatal: true }).decode(bytes);
@@ -88,14 +84,22 @@ function decodeUtf8(bytes, label) {
   }
 }
 
-export function transformJsonResponse(buffer, codec) {
+export function transformJsonResponse(buffer, codec, { omlxResponse = false } = {}) {
   if (!Buffer.isBuffer(buffer)) {
     throw new TypeError("JSON response must be a Buffer");
   }
-  return Buffer.from(
-    transformJsonText(decodeUtf8(buffer, "Upstream JSON response"), codec),
-    "utf8",
-  );
+  const parsed = parseJsonText(decodeUtf8(buffer, "Upstream JSON response"));
+  if (omlxResponse && Array.isArray(parsed?.output)) {
+    // oMLX serializes its shared output-item model with null message and
+    // reasoning fields on JSON function calls. SSE uses the canonical shape.
+    for (const item of parsed.output) {
+      if (item?.type !== "function_call") continue;
+      for (const field of ["role", "content", "summary"]) {
+        if (item[field] === null) delete item[field];
+      }
+    }
+  }
+  return Buffer.from(JSON.stringify(transformParsedResponse(parsed, codec)), "utf8");
 }
 
 function splitEventLines(source) {

@@ -352,3 +352,17 @@ test("loads and validates a JSON bridge config", async () => {
   assert.equal(loaded.bridge.defaultModel, "gpt-5.6-sol");
   assert.equal(loaded.providers.length, 2);
 });
+
+test("oMLX accepts an explicit local Responses endpoint and requires allowlisted models", () => {
+  const config = validConfig();
+  const provider = config.providers[0];
+  provider.kind = "omlx-responses";
+  assert.equal(validateBridgeConfig(config).providers[0].kind, "omlx-responses");
+  provider.discovery = { mode: "loaded" };
+  assert.throws(() => validateBridgeConfig(config), /loaded is supported only/u);
+  delete provider.discovery;
+  for (const url of ["https://vendor.example/v1", "http://127.0.0.1:1234/api"]) {
+    provider.baseUrl = url;
+    assert.throws(() => validateBridgeConfig(config), /exact \/v1 path/u);
+  }
+});
