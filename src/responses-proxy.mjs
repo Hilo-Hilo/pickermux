@@ -1,3 +1,4 @@
+import { supportsClientToolSearch } from "./tool-protocol.mjs";
 import { supportsMlxTools } from "./mlx-capabilities.mjs";
 
 import dns from "node:dns";
@@ -977,6 +978,7 @@ function externalBody(body, route, maxBytes, {
   }
 
   const mlxTools = route.providerKind === "mlx-chat-completions" && supportsMlxTools(route.mlxCapabilities);
+  const reviewedToolProtocol = supportsClientToolSearch(route.providerKind, route.mlxCapabilities);
   const toolsEnabled = (route.providerKind !== "mlx-chat-completions" || mlxTools) &&
     (route.toolsEnabled === true || certificationRequest);
   const rewritten = { ...body, model: route.upstreamModel };
@@ -1011,7 +1013,7 @@ function externalBody(body, route, maxBytes, {
       if (sanitized.type === "function_call") {
         delete sanitized.encrypted_function_args;
         if (
-          (route.providerKind === "lmstudio-responses" || mlxTools) &&
+          reviewedToolProtocol &&
           sanitized.namespace === "functions"
         ) {
           delete sanitized.namespace;
@@ -1044,7 +1046,7 @@ function externalBody(body, route, maxBytes, {
     enforceTextOnlyRequest(rewritten, body);
     toolCodec = createTextOnlyToolResponseCodec();
   }
-  if (route.providerKind === "lmstudio-responses" || mlxTools) {
+  if (reviewedToolProtocol) {
     if (Object.hasOwn(body, "tools") && !Array.isArray(body.tools)) {
       throw new ResponsesProxyError(
         "LM Studio tools must be a JSON array",
@@ -1379,6 +1381,7 @@ function relayUpstream({
   transports,
   lookup,
   responseCodec,
+  omlxResponse = false,
   nativeReviewResponse = false,
   webSearchResponse = false,
   liveResponse = false,
@@ -1765,7 +1768,7 @@ function relayUpstream({
                 onGenerationDuration: (duration) => tokenUsageObserver?.generationDuration(duration),
               }));
             } else if (transformMode === "json") {
-              writeChunk(transformJsonResponse(Buffer.concat(jsonChunks), responseCodec));
+              writeChunk(transformJsonResponse(Buffer.concat(jsonChunks), responseCodec, { omlxResponse }));
             } else if (["sse", "mlx-sse"].includes(transformMode)) {
               for (const transformed of sseTransformer.finish()) writeChunk(transformed);
             }
@@ -2096,6 +2099,7 @@ export function createResponsesProxy({
           transports,
           lookup,
           responseCodec,
+          omlxResponse: route.providerKind === "omlx-responses",
           nativeReviewResponse: nativeReview && ownCompactionState,
           compactionResponse,
           mlxResponse,

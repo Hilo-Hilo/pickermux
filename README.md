@@ -43,6 +43,10 @@ or LM Studio.
 - A compatible Responses provider with an available model. For LM Studio,
   start its server and load at least one LLM.
 
+For a local oMLX server, configure the `omlx-responses` provider kind and
+certify each allowlisted model. Models that pass both tool-search probes can
+load tool definitions on demand. See [provider configuration](docs/CONFIGURATION.md#supported-provider-kinds).
+
 General Chat Completions compatibility is insufficient. Custom Responses
 providers and the experimental MLX adapter are described in
 [configuration](docs/CONFIGURATION.md#supported-provider-kinds).

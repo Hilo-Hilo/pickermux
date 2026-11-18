@@ -1,3 +1,4 @@
+import { supportsClientToolSearch } from "./tool-protocol.mjs";
 import { supportsMlxTools } from "./mlx-capabilities.mjs";
 
 import { execFile as execFileCallback } from "node:child_process";
@@ -407,7 +408,7 @@ function catalogEntry(
   const efficientFidelity =
     certifiedForTools &&
     certifiedForEfficientFidelity &&
-    (LM_STUDIO_MODEL_SOURCES.has(model.source) || (mlx && supportsMlxTools(model.capabilities)));
+    (LM_STUDIO_MODEL_SOURCES.has(model.source) || supportsClientToolSearch(model.providerKind, model.capabilities));
   const contextPresentation = contextPickerPresentation(model.contextWindow, {
     source: model.source,
   });

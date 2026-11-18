@@ -744,6 +744,22 @@ test("enables Efficient Fidelity only after its additive LM Studio certification
   );
 });
 
+test("oMLX advertises tool search only for its certified provider kind", () => {
+  const model = {
+    id: "local/example", displayName: "Example", type: "llm",
+    contextWindow: 32_768, source: "openai-compatible-models",
+  };
+  for (const providerKind of ["openai-responses", "omlx-responses"]) {
+    for (const granted of [false, true]) {
+      const { models: [entry] } = buildCodexCatalog({
+        bundledCatalog: { models: [donor] }, discoveredModels: [{ ...model, providerKind }],
+        certifiedModelSlugs: [model.id], efficientFidelityModelSlugs: granted ? [model.id] : [],
+      });
+      assert.equal(entry.supports_search_tool, granted && providerKind === "omlx-responses");
+    }
+  }
+});
+
 test("sandbox guidance preserves donor policies, native models and compaction identity", () => {
   const originalDonor = structuredClone(donor);
   for (const source of ["lmstudio-rest", "openai-compatible-models"]) {

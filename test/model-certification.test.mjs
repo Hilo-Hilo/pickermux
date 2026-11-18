@@ -347,6 +347,13 @@ test("Efficient Fidelity extends a valid legacy direct receipt additively", asyn
   );
   assert.deepEqual(store.receipts[subject().publicModelId].gates, efficientGates);
 
+  const omlx = subject({ providerKind: "omlx-responses" });
+  assert.equal(evaluateEfficientFidelityCertification(store, omlx).status, "stale");
+  await recordPassedCertification(storePath, omlx, allGates());
+  assert.equal(evaluateEfficientFidelityCertification(await readCertificationStore(storePath), omlx).status, "missing");
+  await recordPassedEfficientFidelityCertification(storePath, omlx, additiveGates);
+  assert.equal(evaluateEfficientFidelityCertification(await readCertificationStore(storePath), omlx).status, "valid");
+
   const vendor = subject({
     providerId: "vendor",
     providerKind: "openai-responses",

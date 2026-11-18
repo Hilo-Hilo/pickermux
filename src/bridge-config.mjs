@@ -58,6 +58,7 @@ const ENV_NAME_PATTERN = /^[A-Za-z_][A-Za-z0-9_]*$/u;
 const SUPPORTED_PROVIDER_KINDS = new Set([
   "lmstudio-responses",
   "openai-responses",
+  "omlx-responses",
   "mlx-chat-completions",
 ]);
 const SUPPORTED_REASONING_EFFORTS = new Set([
@@ -449,7 +450,7 @@ function normalizeProvider(input, index, seenProviderIds, seenSlugs) {
 
   if (!SUPPORTED_PROVIDER_KINDS.has(input.kind)) {
     throw new Error(
-      `${label}.kind must be lmstudio-responses, openai-responses, or mlx-chat-completions`,
+      `${label}.kind must be lmstudio-responses, openai-responses, omlx-responses, or mlx-chat-completions`,
     );
   }
   const discovery = normalizeDiscovery(input.discovery, input.kind, label);
@@ -461,7 +462,7 @@ function normalizeProvider(input, index, seenProviderIds, seenSlugs) {
     input.allowPrivateNetwork,
     `${label}.baseUrl`,
   );
-  if (input.kind === "mlx-chat-completions") {
+  if (input.kind === "mlx-chat-completions" || input.kind === "omlx-responses") {
     const url = new URL(baseUrl);
     if (
       url.protocol !== "http:" || url.hostname !== "127.0.0.1" ||
@@ -469,7 +470,8 @@ function normalizeProvider(input, index, seenProviderIds, seenSlugs) {
     ) {
       throw new Error(`${label}.baseUrl must be a 127.0.0.1 HTTP URL with the exact /v1 path`);
     }
-    if (input.credentialEnv !== undefined || input.credentialKeychain !== undefined) {
+    if (input.kind === "mlx-chat-completions" &&
+      (input.credentialEnv !== undefined || input.credentialKeychain !== undefined)) {
       throw new Error(`${label} does not accept credentials for its local MLX server`);
     }
   }

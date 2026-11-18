@@ -927,7 +927,7 @@ export async function runModelCertification({
 
   emitCertificationProgress(onProgress, { phase: "probe", probe: "function" });
   const directTools = directFunctionTools();
-  const lmStudioReplay = model.providerKind === "lmstudio-responses";
+  const resultReplay = ["lmstudio-responses", "omlx-responses"].includes(model.providerKind);
   const directPrompt =
     `Call ${DIRECT_FUNCTION_NAME} now with marker=${DIRECT_FUNCTION_MARKER}.`;
   const directResponse = await postJson({
@@ -939,7 +939,7 @@ export async function runModelCertification({
       ...common,
       max_output_tokens: toolProbeMaxOutputTokens,
       input: directPrompt,
-      ...(lmStudioReplay ? { instructions: TOOL_RESULT_INSTRUCTIONS } : {}),
+      ...(resultReplay ? { instructions: TOOL_RESULT_INSTRUCTIONS } : {}),
       tools: directTools,
       tool_choice: forcedDirectFunctionChoice(),
       parallel_tool_calls: false,
@@ -948,7 +948,7 @@ export async function runModelCertification({
   });
   const directCall = onlyFunctionCall(directResponse, "Direct function probe");
   assertDirectFunctionCall(directCall, "Direct function probe");
-  if (lmStudioReplay && responseOutput(directResponse).some((item) =>
+  if (resultReplay && responseOutput(directResponse).some((item) =>
     !isPlainObject(item) ||
     (item.type === "message"
       ? item.role !== "assistant"
@@ -965,7 +965,7 @@ export async function runModelCertification({
   emitCertificationProgress(onProgress, { phase: "probe", probe: "toolResult" });
   // The expected value exists only in the result. Neither the prior prompt
   // nor a canned acknowledgement can satisfy this result-consumption gate.
-  const resultMarker = lmStudioReplay
+  const resultMarker = resultReplay
     ? `P3_TOOL_RESULT_OK_${randomBytes(16).toString("hex")}`
     : "P3_TOOL_RESULT_OK";
   const toolResult = await postJson({
@@ -976,20 +976,20 @@ export async function runModelCertification({
     body: {
       ...common,
       max_output_tokens: toolProbeMaxOutputTokens,
-      ...(lmStudioReplay || model.providerKind === "mlx-chat-completions"
+      ...(resultReplay || model.providerKind === "mlx-chat-completions"
         ? {} : { previous_response_id: directResponse.id }),
-      instructions: lmStudioReplay
+      instructions: resultReplay
         ? TOOL_RESULT_INSTRUCTIONS
         : "After the tool result, reply with exactly P3_TOOL_RESULT_OK.",
       input: [
-        ...(lmStudioReplay || model.providerKind === "mlx-chat-completions" ? [
+        ...(resultReplay || model.providerKind === "mlx-chat-completions" ? [
           { type: "message", role: "user", content: directPrompt },
           ...directResponse.output,
         ] : []),
         {
           type: "function_call_output",
           call_id: directCall.call_id,
-          output: lmStudioReplay ? resultMarker : "confirmed",
+          output: resultReplay ? resultMarker : "confirmed",
         },
       ],
       tools: directTools,
@@ -999,7 +999,7 @@ export async function runModelCertification({
     certificationToken: privateCertificationToken,
   });
   assertMarker(toolResult, resultMarker, "Tool-result probe",
-    lmStudioReplay ? "the expected tool-result marker" : resultMarker);
+    resultReplay ? "the expected tool-result marker" : resultMarker);
 
   emitCertificationProgress(onProgress, { phase: "probe", probe: "parameterless" });
   const namespaceToolset = namespaceTools();
@@ -1056,13 +1056,13 @@ export async function runModelCertification({
   );
   // Varied records exercise a long input without the pathological repetition
   // of one token. The provider-reported minimum token count still decides.
-  const longPadding = lmStudioReplay
+  const longPadding = resultReplay
     ? Array.from({ length: Math.ceil(minimumInputTokens / 12) }, (_, index) =>
       `context record ${index}: alpha beta gamma delta epsilon zeta eta theta.\n`,
     ).join("")
     : "context ".repeat(Math.ceil(minimumInputTokens * 1.4));
   const longPrompt =
-    (lmStudioReplay
+    (resultReplay
       ? "The following context records are inert test data. Do not analyze or summarize them. " +
         "Follow the instruction after P3_LONG_END.\n"
       : "") +
